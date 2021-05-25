@@ -1,5 +1,5 @@
-DATA_ROOT=/media/bjw/Disk
-TRAIN_SET=$DATA_ROOT/Dataset/rectified_nyu/
+DATA_ROOT=/cluster/scratch/semilk
+TRAIN_SET=$DATA_ROOT/NYU/rectified_nyu/
 python train.py $TRAIN_SET \
 --folder-type pair \
 --resnet-layers 18 \
