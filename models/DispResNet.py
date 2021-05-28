@@ -84,6 +84,7 @@ class DepthDecoder(nn.Module):
 
     def forward(self, input_features):
         self.outputs = []
+        self.features = {}
 
         # decoder
         x = input_features[-1]
@@ -96,27 +97,57 @@ class DepthDecoder(nn.Module):
             x = self.convs[("upconv", i, 1)](x)
             if i in self.scales:
                 self.outputs.append(self.alpha * self.sigmoid(self.convs[("dispconv", i)](x)) + self.beta)
+                self.features[("features", i)] = x
 
         self.outputs = self.outputs[::-1]
-        return self.outputs
+        return self.outputs, self.features
+
+class Uncertainty_Layers_Block(nn.Module):
+    def __init__(self, num_ch_decoder, scales=range(4), num_output_channels=1):
+        super(Uncertainty_Layers_Block, self).__init__()
+
+        self.num_ch_dec = num_ch_decoder
+        self.scales = scales
+        self.num_output_channels = num_output_channels
+
+        self.convs = OrderedDict()
+
+        for s in self.scales:
+            self.convs[("uncertconv", s)] = Conv3x3(self.num_ch_dec[s], self.num_output_channels)
+
+        self.uncertainty_layers = nn.ModuleList(list(self.convs.values()))
+    
+    def forward(self, features_0, features_1, features_2, features_3):
+        uncertainty_3 = self.convs[("uncertconv", 3)](features_3)
+        uncertainty_2 = self.convs[("uncertconv", 2)](features_2)
+        uncertainty_1 = self.convs[("uncertconv", 1)](features_1)
+        uncertainty_0 = self.convs[("uncertconv", 0)](features_0)
+
+        return uncertainty_0, uncertainty_1, uncertainty_2, uncertainty_3
 
 
 class DispResNet(nn.Module):
 
-    def __init__(self, num_layers = 18, pretrained = True):
+    def __init__(self, num_layers = 18, pretrained = True, enable_uncert = False):
         super(DispResNet, self).__init__()
+        self.enable_uncert = enable_uncert
         self.encoder = ResnetEncoder(num_layers = num_layers, pretrained = pretrained, num_input_images=1)
         self.decoder = DepthDecoder(self.encoder.num_ch_enc)
+        if self.enable_uncert:
+            self.uncertainty_layers_block = Uncertainty_Layers_Block(self.decoder.num_ch_dec)
 
     def init_weights(self):
         pass
 
     def forward(self, x):
         features = self.encoder(x)
-        outputs = self.decoder(features)
-        
+        outputs, features_dec = self.decoder(features)
+        if self.enable_uncert:
+            uncertainty_map, _, _, _ = self.uncertainty_layers_block(features_dec[("features", 0)], features_dec[("features", 1)], features_dec[("features", 2)], features_dec[("features", 3)])
+            outputs.append(uncertainty_map)
+            
         if self.training:
-            return outputs
+            return outputs[:len(outputs)-1], outputs[-1]
         else:
             return outputs[0]
 

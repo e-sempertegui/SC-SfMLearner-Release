@@ -47,7 +47,7 @@ compute_ssim_loss = SSIM().to(device)
 
 # photometric loss
 # geometry consistency loss
-def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths, poses, poses_inv, max_scales, with_ssim, with_mask, with_auto_mask, padding_mode):
+def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths, poses, poses_inv, max_scales, with_ssim, with_mask, with_auto_mask, padding_mode, uncertainty_training, uncertainty_map_tgt, ref_uncertainty_maps):
 
     photo_loss = 0
     geometry_loss = 0
@@ -82,9 +82,9 @@ def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, re
                 ref_depth_scaled = F.interpolate(ref_depth[s], (h, w), mode='nearest')
 
             photo_loss1, geometry_loss1 = compute_pairwise_loss(tgt_img_scaled, ref_img_scaled, tgt_depth_scaled, ref_depth_scaled, pose,
-                                                                intrinsic_scaled, with_ssim, with_mask, with_auto_mask, padding_mode)
+                                                                intrinsic_scaled, with_ssim, with_mask, with_auto_mask, padding_mode, uncertainty_training, uncertainty_map_tgt)
             photo_loss2, geometry_loss2 = compute_pairwise_loss(ref_img_scaled, tgt_img_scaled, ref_depth_scaled, tgt_depth_scaled, pose_inv,
-                                                                intrinsic_scaled, with_ssim, with_mask, with_auto_mask, padding_mode)
+                                                                intrinsic_scaled, with_ssim, with_mask, with_auto_mask, padding_mode, uncertainty_training, ref_uncertainty_maps[0])
 
             photo_loss += (photo_loss1 + photo_loss2)
             geometry_loss += (geometry_loss1 + geometry_loss2)
@@ -92,8 +92,9 @@ def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, re
     return photo_loss, geometry_loss
 
 
-def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsic, with_ssim, with_mask, with_auto_mask, padding_mode):
+def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsic, with_ssim, with_mask, with_auto_mask, padding_mode, uncertainty_training, uncertainty_map_tgt):
 
+    # reprojects pixels from target to source frame ---> use target depth map uncertainty!
     ref_img_warped, valid_mask, projected_depth, computed_depth = inverse_warp2(ref_img, tgt_depth, ref_depth, pose, intrinsic, padding_mode)
 
     diff_img = (tgt_img - ref_img_warped).abs().clamp(0, 1)
@@ -111,6 +112,10 @@ def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsi
     if with_mask == True:
         weight_mask = (1 - diff_depth)
         diff_img = diff_img * weight_mask
+
+    # Compute log-likelihood loss
+    if uncertainty_training:
+        diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt)) + uncertainty_map_tgt
 
     # compute all loss
     reconstruction_loss = mean_on_mask(diff_img, valid_mask)

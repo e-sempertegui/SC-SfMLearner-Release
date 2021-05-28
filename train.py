@@ -3,6 +3,7 @@ import time
 import csv
 import datetime
 from path import Path
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -59,6 +60,7 @@ parser.add_argument('--padding-mode', type=str, choices=['zeros', 'border'], def
                          ' border will only null gradients of the coordinate outside (x or y)')
 parser.add_argument('--with-gt', action='store_true', help='use ground truth for validation. \
                     You need to store it in npy 2D arrays see data/kitti_raw_loader.py for an example')
+parser.add_argument('--uncertainty-training', type=int, default=0, help='boolean flag to set uncertainty training mode')
 
 
 best_error = -1
@@ -151,7 +153,7 @@ def main():
 
     # create model
     print("=> creating model")
-    disp_net = models.DispResNet(args.resnet_layers, args.with_pretrain).to(device)
+    disp_net = models.DispResNet(args.resnet_layers, args.with_pretrain, args.uncertainty_training).to(device)
     pose_net = models.PoseResNet(18, args.with_pretrain).to(device)
 
     # load parameters
@@ -193,7 +195,7 @@ def main():
 
         # train for one epoch
         logger.reset_train_bar()
-        train_loss = train(args, train_loader, disp_net, pose_net, optimizer, args.epoch_size, logger, training_writer)
+        train_loss = train(args, train_loader, disp_net, pose_net, optimizer, args.epoch_size, logger, training_writer, epoch)
         logger.train_writer.write(' * Avg Loss : {:.3f}'.format(train_loss))
 
         # evaluate on validation set
@@ -232,12 +234,17 @@ def main():
     logger.epoch_bar.finish()
 
 
-def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger, train_writer):
+def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger, train_writer, epoch):
     global n_iter, device
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter(precision=4)
     w1, w2, w3 = args.photo_loss_weight, args.smooth_loss_weight, args.geometry_consistency_weight
+
+    # objects to save frames at the end of epoch
+    uncertainty_tgt_final_step = torch.Tensor()
+    tgt_img_final_step = torch.Tensor()
+    tgt_depth_final_step = torch.Tensor()
 
     # switch to train mode
     disp_net.train()
@@ -248,6 +255,8 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
 
     for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv) in enumerate(train_loader):
         log_losses = i > 0 and n_iter % args.print_freq == 0
+        # DEBUG
+        print("Number of source images per batch = ", len(ref_imgs))
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -256,12 +265,13 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         intrinsics = intrinsics.to(device)
 
         # compute output
-        tgt_depth, ref_depths = compute_depth(disp_net, tgt_img, ref_imgs)
+        tgt_depth, ref_depths, uncertainty_map_tgt, ref_uncertainty_maps = compute_depth(disp_net, tgt_img, ref_imgs)
         poses, poses_inv = compute_pose_with_inv(pose_net, tgt_img, ref_imgs)
 
         loss_1, loss_3 = compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths,
                                                          poses, poses_inv, args.num_scales, args.with_ssim,
-                                                         args.with_mask, args.with_auto_mask, args.padding_mode)
+                                                         args.with_mask, args.with_auto_mask, args.padding_mode,
+                                                         args.uncertainty_training, uncertainty_map_tgt, ref_uncertainty_maps)
 
         loss_2 = compute_smooth_loss(tgt_depth, tgt_img, ref_depths, ref_imgs)
 
@@ -291,10 +301,53 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         logger.train_bar.update(i+1)
         if i % args.print_freq == 0:
             logger.train_writer.write('Train: Time {} Data {} Loss {}'.format(batch_time, data_time, losses))
+        
+        # save frames every certain number of steps
+        if i == 0 or i % 1000 == 0:
+            # print("Number of uncertainty maps =", len(uncertainty_maps))
+            # Save uncertainty map
+            plt.imshow(torch.exp(uncertainty_map_tgt).detach().cpu().squeeze(), cmap="hot")
+            plot_path = '/cluster/scratch/semilk/NYU/results/uncertainty_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plt.axis('off')
+            plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+            # Save corresponding RGB image
+            plt.imshow(tgt_img.detach().cpu().squeeze())
+            plot_path = '/cluster/scratch/semilk/NYU/results/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plt.axis('off')
+            plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+            # Save corresponding depth image
+            plt.imshow(tgt_depth.detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+            plot_path = '/cluster/scratch/semilk/NYU/results/depth_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plt.axis('off')
+            plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+        uncertainty_tgt_final_step = torch.exp(uncertainty_map_tgt)
+        tgt_img_final_step = tgt_img
+        tgt_depth_final_step = tgt_depth
+
         if i >= epoch_size - 1:
             break
 
         n_iter += 1
+
+    # save predictions at the end of each epoch
+    print("Saving input rgb and predictions at final step for epoch ", epoch)
+    plt.imshow(tgt_depth_final_step.detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+    plot_path = '/cluster/scratch/semilk/NYU/results/depth_map_final_step_epoch_' + str(epoch) + '.png'
+    plt.axis('off')
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+    plt.imshow(uncertainty_tgt_final_step.detach().cpu().squeeze(), cmap="hot")
+    plot_path = '/cluster/scratch/semilk/NYU/results/uncertainty_map_final_step_epoch_' + str(epoch) + '.png'
+    plt.axis('off')
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+    plt.imshow(tgt_img_final_step.detach().cpu().squeeze())
+    plot_path = '/cluster/scratch/semilk/NYU/results/rgb_final_step_epoch_' + str(epoch) + '.png'
+    plt.axis('off')
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
     return losses.avg[0]
 
@@ -424,14 +477,21 @@ def validate_with_gt(args, val_loader, disp_net, epoch, logger, output_writers=[
 
 
 def compute_depth(disp_net, tgt_img, ref_imgs):
-    tgt_depth = [1/disp for disp in disp_net(tgt_img)]
+    # TODO: this should depend on args.uncertainty_training 
+    # tgt_depth = [1/disp for disp in disp_net(tgt_img)]
+    tgt_disp, uncertainty_map_tgt = disp_net(tgt_img)
+    tgt_depth = [1/disp for disp in tgt_disp]
 
     ref_depths = []
+    ref_uncertainty_maps = []
     for ref_img in ref_imgs:
-        ref_depth = [1/disp for disp in disp_net(ref_img)]
+        # ref_depth = [1/disp for disp in disp_net(ref_img)]
+        ref_disp, uncertainty_map_ref = disp_net(ref_img)
+        ref_depth = [1/disp for disp in ref_disp]
         ref_depths.append(ref_depth)
+        ref_uncertainty_maps.append(uncertainty_map_ref)
 
-    return tgt_depth, ref_depths
+    return tgt_depth, ref_depths, uncertainty_map_tgt, ref_uncertainty_maps
 
 
 def compute_pose_with_inv(pose_net, tgt_img, ref_imgs):
