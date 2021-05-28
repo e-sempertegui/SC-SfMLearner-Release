@@ -134,6 +134,7 @@ class DispResNet(nn.Module):
         self.encoder = ResnetEncoder(num_layers = num_layers, pretrained = pretrained, num_input_images=1)
         self.decoder = DepthDecoder(self.encoder.num_ch_enc)
         if self.enable_uncert:
+            print("Uncertainty Layers activated!")
             self.uncertainty_layers_block = Uncertainty_Layers_Block(self.decoder.num_ch_dec)
 
     def init_weights(self):
