@@ -146,7 +146,7 @@ class DispResNet(nn.Module):
         if self.enable_uncert:
             uncertainty_map, _, _, _ = self.uncertainty_layers_block(features_dec[("features", 0)], features_dec[("features", 1)], features_dec[("features", 2)], features_dec[("features", 3)])
             outputs.append(uncertainty_map)
-            print("Dimensions for uncertainty map = " uncertainty_map.shape)
+            print("Dimensions for uncertainty map = ", uncertainty_map.shape)
             print("Added uncertainty map to disparity outputs list")
             print("Size of output list = ", len(outputs))
             
