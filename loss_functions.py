@@ -116,6 +116,8 @@ def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsi
         weight_mask = (1 - diff_depth)
         diff_img = diff_img * weight_mask
 
+    print("diff_img dimension after masking = ", diff_img.shape)
+
     # Compute log-likelihood loss
     if uncertainty_training:
         diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt)) + uncertainty_map_tgt
