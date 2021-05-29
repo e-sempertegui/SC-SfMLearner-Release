@@ -228,6 +228,10 @@ def main():
             },
             is_best)
 
+        # Save final model for every epoch
+        save_path = "/cluster/scratch/semilk/NYU/training_saved_models/uncertainty_model" + "_epoch_" + str(epoch) + ".pth"
+        torch.save(disp_net.state_dict(), save_path)
+
         with open(args.save_path/args.log_summary, 'a') as csvfile:
             writer = csv.writer(csvfile, delimiter='\t')
             writer.writerow([train_loss, decisive_error])
@@ -346,7 +350,7 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
-    plt.imshow((tgt_img_final_step[0]*255.0).permute(1,2,0).detach().cpu().squeeze())
+    plt.imshow((tgt_img_final_step[0]*0.225 + 0.45).permute(1,2,0).detach().cpu().squeeze())
     plot_path = '/cluster/scratch/semilk/NYU/results/rgb_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
