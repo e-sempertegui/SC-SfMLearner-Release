@@ -267,6 +267,8 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         # compute output
         tgt_depth, ref_depths, uncertainty_map_tgt, ref_uncertainty_maps = compute_depth(disp_net, tgt_img, ref_imgs)
         poses, poses_inv = compute_pose_with_inv(pose_net, tgt_img, ref_imgs)
+        print("Size of predicted depth list = ", len(tgt_depth))
+        print("Dimension of predicted target depth tensor for scale 0 = ", tgt_depth[0].shape)
 
         loss_1, loss_3 = compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths,
                                                          poses, poses_inv, args.num_scales, args.with_ssim,

@@ -153,7 +153,7 @@ class DispResNet(nn.Module):
             print("Size of output list = ", len(outputs))
             
         if self.training:
-            return outputs[:len(outputs)-1], outputs[4]
+            return outputs[:len(outputs)-1], outputs[-1]
         else:
             return outputs[0]
 
