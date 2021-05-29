@@ -314,7 +314,7 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
             # Save corresponding RGB image
-            plt.imshow(tgt_img[0].permute(1,2,0).detach().cpu().squeeze())
+            plt.imshow(tgt_img[0].permute(1,2,0)/255.0.detach().cpu().squeeze())
             plot_path = '/cluster/scratch/semilk/NYU/results/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
