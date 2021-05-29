@@ -101,8 +101,8 @@ def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsi
 
     diff_depth = ((computed_depth - projected_depth).abs() / (computed_depth + projected_depth)).clamp(0, 1)
 
-    print("diff_img dimension = ", diff_img.shape)
-    print("diff_depth dimension = ", diff_depth.shape)
+    # print("diff_img dimension = ", diff_img.shape)
+    # print("diff_depth dimension = ", diff_depth.shape)
 
     if with_auto_mask == True:
         auto_mask = (diff_img.mean(dim=1, keepdim=True) < (tgt_img - ref_img).abs().mean(dim=1, keepdim=True)).float() * valid_mask
@@ -113,22 +113,22 @@ def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsi
         diff_img = (0.15 * diff_img + 0.85 * ssim_map)
 
     if with_mask == True:
-        print("Masking diff_img ...")
+        # print("Masking diff_img ...")
         weight_mask = (1 - diff_depth)
         diff_img = diff_img * weight_mask
 
-    print("diff_img dimension after masking = ", diff_img.shape)
+    # print("diff_img dimension after masking = ", diff_img.shape)
 
     # Compute log-likelihood loss
     if uncertainty_training:
-        print("Modifying diff_img according to uncertainty!")
+        # print("Modifying diff_img according to uncertainty!")
         # Dimensions consistency are automatically handled by Pytorch
         # uncertainty_map_tgt ---> [B,1,H,W]
         # diff_img (r,g,b) ---> [B,3,H,W] 
         # diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt).expand_as(diff_img)) + uncertainty_map_tgt.expand_as(diff_img)
         diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt)) + uncertainty_map_tgt
 
-    print("diff_img dimension after uncertainty loss step = ", diff_img.shape)
+    # print("diff_img dimension after uncertainty loss step = ", diff_img.shape)
 
     # compute all loss
     reconstruction_loss = mean_on_mask(diff_img, valid_mask)

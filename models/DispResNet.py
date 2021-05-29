@@ -88,7 +88,7 @@ class DepthDecoder(nn.Module):
 
         # decoder
         x = input_features[-1]
-        print("Dimensions of final encoder features = ", x.shape)
+        # print("Dimensions of final encoder features = ", x.shape)
         for i in range(4, -1, -1):
             x = self.convs[("upconv", i, 0)](x)
             x = [upsample(x)]
@@ -135,7 +135,7 @@ class DispResNet(nn.Module):
         self.encoder = ResnetEncoder(num_layers = num_layers, pretrained = pretrained, num_input_images=1)
         self.decoder = DepthDecoder(self.encoder.num_ch_enc)
         if self.enable_uncert:
-            print("Uncertainty Layers activated!")
+            print("Uncertainty Layers enabled!")
             self.uncertainty_layers_block = Uncertainty_Layers_Block(self.decoder.num_ch_dec)
 
     def init_weights(self):
@@ -147,10 +147,10 @@ class DispResNet(nn.Module):
         if self.enable_uncert:
             uncertainty_map, _, _, _ = self.uncertainty_layers_block(features_dec[("features", 0)], features_dec[("features", 1)], features_dec[("features", 2)], features_dec[("features", 3)])
             outputs.append(uncertainty_map)
-            print("Dimension of features at scale 0 = ", features_dec[("features", 0)].shape)
-            print("Dimensions for uncertainty map = ", uncertainty_map.shape)
-            print("Added uncertainty map to disparity outputs list")
-            print("Size of output list = ", len(outputs))
+            # print("Dimension of features at scale 0 = ", features_dec[("features", 0)].shape)
+            # print("Dimensions for uncertainty map = ", uncertainty_map.shape)
+            # print("Added uncertainty map to disparity outputs list")
+            # print("Size of output list = ", len(outputs))
             
         if self.training:
             return outputs[:len(outputs)-1], outputs[-1]
