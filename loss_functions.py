@@ -94,12 +94,15 @@ def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, re
 
 def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsic, with_ssim, with_mask, with_auto_mask, padding_mode, uncertainty_training, uncertainty_map_tgt):
 
-    # reprojects pixels from target to source frame ---> use target depth map uncertainty!
+    # reprojects pixels from target to source frame (view synthesis)---> use target depth map uncertainty!
     ref_img_warped, valid_mask, projected_depth, computed_depth = inverse_warp2(ref_img, tgt_depth, ref_depth, pose, intrinsic, padding_mode)
 
     diff_img = (tgt_img - ref_img_warped).abs().clamp(0, 1)
 
     diff_depth = ((computed_depth - projected_depth).abs() / (computed_depth + projected_depth)).clamp(0, 1)
+
+    print("diff_img dimension = ", diff_img.shape)
+    print("diff_depth dimension = ", diff_depth.shape)
 
     if with_auto_mask == True:
         auto_mask = (diff_img.mean(dim=1, keepdim=True) < (tgt_img - ref_img).abs().mean(dim=1, keepdim=True)).float() * valid_mask
