@@ -88,6 +88,7 @@ class DepthDecoder(nn.Module):
 
         # decoder
         x = input_features[-1]
+        print("Dimensions of final encoder features = ", x.shape)
         for i in range(4, -1, -1):
             x = self.convs[("upconv", i, 0)](x)
             x = [upsample(x)]
