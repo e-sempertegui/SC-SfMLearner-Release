@@ -308,24 +308,24 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         if i == 0 or i % 1000 == 0:
             # print("Number of uncertainty maps =", len(uncertainty_maps))
             # Save uncertainty map
-            plt.imshow(torch.exp(uncertainty_map_tgt).detach().cpu().squeeze(), cmap="hot")
+            plt.imshow(torch.exp(uncertainty_map_tgt[0]).detach().cpu().squeeze(), cmap="hot")
             plot_path = '/cluster/scratch/semilk/NYU/results/uncertainty_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
             # Save corresponding RGB image
-            plt.imshow(tgt_img.detach().cpu().squeeze())
+            plt.imshow(tgt_img[0].detach().cpu().squeeze())
             plot_path = '/cluster/scratch/semilk/NYU/results/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
             # Save corresponding depth image
-            plt.imshow(tgt_depth.detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+            plt.imshow(tgt_depth[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
             plot_path = '/cluster/scratch/semilk/NYU/results/depth_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
-        uncertainty_tgt_final_step = torch.exp(uncertainty_map_tgt)
+        uncertainty_tgt_final_step = uncertainty_map_tgt
         tgt_img_final_step = tgt_img
         tgt_depth_final_step = tgt_depth
 
@@ -336,17 +336,17 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
 
     # save predictions at the end of each epoch
     print("Saving input rgb and predictions at final step for epoch ", epoch)
-    plt.imshow(tgt_depth_final_step.detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+    plt.imshow(tgt_depth_final_step[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
     plot_path = '/cluster/scratch/semilk/NYU/results/depth_map_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
-    plt.imshow(uncertainty_tgt_final_step.detach().cpu().squeeze(), cmap="hot")
+    plt.imshow(torch.exp(uncertainty_tgt_final_step[0]).detach().cpu().squeeze(), cmap="hot")
     plot_path = '/cluster/scratch/semilk/NYU/results/uncertainty_map_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
-    plt.imshow(tgt_img_final_step.detach().cpu().squeeze())
+    plt.imshow(tgt_img_final_step[0].detach().cpu().squeeze())
     plot_path = '/cluster/scratch/semilk/NYU/results/rgb_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
