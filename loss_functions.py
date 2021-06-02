@@ -71,6 +71,7 @@ def compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, re
 
             # upsample depth
             b, _, h, w = tgt_img.size()
+            print("Image Heigth =", h, "; Image Width =", w)
             tgt_img_scaled = tgt_img
             ref_img_scaled = ref_img
             intrinsic_scaled = intrinsics
