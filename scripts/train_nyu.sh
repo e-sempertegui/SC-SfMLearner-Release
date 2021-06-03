@@ -4,8 +4,8 @@ python train.py $TRAIN_SET \
 --folder-type pair \
 --resnet-layers 18 \
 --num-scales 1 \
--b16 -s0.1 -c0.5 --epoch-size 0 --epochs 50 \
---lr 1e-5 \
+-b16 -s0.2 -c0.1 --epoch-size 0 --epochs 50 \
+--lr 3e-5 \
 --with-ssim 1 \
 --with-mask 1 \
 --with-auto-mask 1 \
