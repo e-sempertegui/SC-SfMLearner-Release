@@ -171,6 +171,7 @@ def main():
     pose_net = torch.nn.DataParallel(pose_net)
 
     print('=> setting adam solver')
+    print('Learning Rate =', args.lr)
     optim_params = [
         {'params': disp_net.parameters(), 'lr': args.lr},
         {'params': pose_net.parameters(), 'lr': args.lr}
