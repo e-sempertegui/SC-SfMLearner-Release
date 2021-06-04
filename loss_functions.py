@@ -126,7 +126,7 @@ def compute_pairwise_loss(tgt_img, ref_img, tgt_depth, ref_depth, pose, intrinsi
         # uncertainty_map_tgt ---> [B,1,H,W]
         # diff_img (r,g,b) ---> [B,3,H,W] 
         # diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt).expand_as(diff_img)) + uncertainty_map_tgt.expand_as(diff_img)
-        diff_img = torch.div(diff_img, torch.exp(uncertainty_map_tgt)) + uncertainty_map_tgt
+        diff_img = torch.abs(torch.div(diff_img, torch.exp(uncertainty_map_tgt)) + uncertainty_map_tgt)
 
     # print("diff_img dimension after uncertainty loss step = ", diff_img.shape)
 
