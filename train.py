@@ -3,6 +3,7 @@ import time
 import csv
 import datetime
 from path import Path
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
