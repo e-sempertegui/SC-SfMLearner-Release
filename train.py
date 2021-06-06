@@ -189,6 +189,7 @@ def main():
     logger.epoch_bar.start()
 
     for epoch in range(args.epochs):
+        print("STARTED EPOCH ", epoch)
         logger.epoch_bar.update(epoch)
 
         # train for one epoch
@@ -226,6 +227,10 @@ def main():
             },
             is_best)
 
+        # Save final model for every epoch
+        save_path = "/cluster/scratch/semilk/NYU/training_saved_models/baseline_original/uncertainty_model" + "_epoch_" + str(epoch) + ".pth"
+        torch.save(disp_net.state_dict(), save_path)
+
         with open(args.save_path/args.log_summary, 'a') as csvfile:
             writer = csv.writer(csvfile, delimiter='\t')
             writer.writerow([train_loss, decisive_error])
@@ -238,6 +243,10 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
     data_time = AverageMeter()
     losses = AverageMeter(precision=4)
     w1, w2, w3 = args.photo_loss_weight, args.smooth_loss_weight, args.geometry_consistency_weight
+
+    # objects to save frames at the end of epoch
+    tgt_img_final_step = torch.Tensor()
+    tgt_depth_final_step = torch.Tensor()
 
     # switch to train mode
     disp_net.train()
@@ -291,10 +300,40 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         logger.train_bar.update(i+1)
         if i % args.print_freq == 0:
             logger.train_writer.write('Train: Time {} Data {} Loss {}'.format(batch_time, data_time, losses))
+
+        # save frames every certain number of steps
+        if i == 0 or i % 1000 == 0:
+            # Save corresponding RGB image
+            plt.imshow((tgt_img[0]*0.225 + 0.45).permute(1,2,0).detach().cpu().squeeze())
+            plot_path = '/cluster/scratch/semilk/NYU/results/baseline_original/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plt.axis('off')
+            plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+            # Save corresponding depth image
+            plt.imshow(tgt_depth[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+            plot_path = '/cluster/scratch/semilk/NYU/results/baseline_original/depth_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plt.axis('off')
+            plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+        tgt_img_final_step = tgt_img
+        tgt_depth_final_step = tgt_depth
+
         if i >= epoch_size - 1:
             break
 
         n_iter += 1
+
+    # save predictions at the end of each epoch
+    print("Saving input rgb and predictions at final step for epoch ", epoch)
+    plt.imshow(tgt_depth_final_step[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
+    plot_path = '/cluster/scratch/semilk/NYU/results/baseline_original/depth_map_final_step_epoch_' + str(epoch) + '.png'
+    plt.axis('off')
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
+
+    plt.imshow((tgt_img_final_step[0]*0.225 + 0.45).permute(1,2,0).detach().cpu().squeeze())
+    plot_path = '/cluster/scratch/semilk/NYU/results/baseline_original/rgb_final_step_epoch_' + str(epoch) + '.png'
+    plt.axis('off')
+    plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
     return losses.avg[0]
 
