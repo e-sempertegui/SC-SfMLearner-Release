@@ -116,7 +116,7 @@ class Uncertainty_Layers_Block(nn.Module):
         for s in self.scales:
             self.convs[("uncertconv", s)] = Conv3x3(self.num_ch_dec[s], self.num_output_channels)
 
-        self.uncertainty_layers = nn.ModuleList(list(self.convs.values()))
+        self.uncertainty_layers_block = nn.ModuleList(list(self.convs.values()))
     
     def forward(self, features_0, features_1, features_2, features_3):
         uncertainty_3 = self.convs[("uncertconv", 3)](features_3)
