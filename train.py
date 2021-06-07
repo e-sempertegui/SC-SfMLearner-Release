@@ -195,7 +195,7 @@ def main():
 
         # train for one epoch
         logger.reset_train_bar()
-        train_loss = train(args, train_loader, disp_net, pose_net, optimizer, args.epoch_size, logger, training_writer)
+        train_loss = train(args, train_loader, disp_net, pose_net, optimizer, args.epoch_size, logger, training_writer, epoch)
         logger.train_writer.write(' * Avg Loss : {:.3f}'.format(train_loss))
 
         # evaluate on validation set
@@ -238,7 +238,7 @@ def main():
     logger.epoch_bar.finish()
 
 
-def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger, train_writer):
+def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger, train_writer, epoch):
     global n_iter, device
     batch_time = AverageMeter()
     data_time = AverageMeter()
