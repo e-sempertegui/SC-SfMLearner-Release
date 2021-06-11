@@ -231,8 +231,10 @@ def main():
             is_best)
 
         # Save final model for every epoch
-        save_path = "/cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix/uncertainty_model" + "_epoch_" + str(epoch) + ".pth"
-        torch.save(disp_net.state_dict(), save_path)
+        save_path_disp = "/cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt2/uncertainty_disp_model" + "_epoch_" + str(epoch) + ".pth"
+        torch.save(disp_net.state_dict(), save_path_disp)
+        save_path_pose = "/cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt2/uncertainty_pose_model" + "_epoch_" + str(epoch) + ".pth"
+        torch.save(pose_net.state_dict(), save_path_pose)
 
         with open(args.save_path/args.log_summary, 'a') as csvfile:
             writer = csv.writer(csvfile, delimiter='\t')
@@ -315,19 +317,19 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
             # print("Number of uncertainty maps =", len(uncertainty_maps))
             # Save uncertainty map
             plt.imshow(torch.exp(uncertainty_map_tgt[0]).detach().cpu().squeeze(), cmap="hot")
-            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/uncertainty_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/uncertainty_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
             # Save corresponding RGB image
             plt.imshow((tgt_img[0]*0.225 + 0.45).permute(1,2,0).detach().cpu().squeeze())
-            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/rgb_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
             # Save corresponding depth image
             plt.imshow(tgt_depth[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
-            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/depth_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
+            plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/depth_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
             plt.axis('off')
             plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
@@ -343,17 +345,17 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
     # save predictions at the end of each epoch
     print("Saving input rgb and predictions at final step for epoch ", epoch)
     plt.imshow(tgt_depth_final_step[0][0].detach().cpu().squeeze(), cmap=plt.cm.get_cmap("magma").reversed())
-    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/depth_map_final_step_epoch_' + str(epoch) + '.png'
+    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/depth_map_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
     plt.imshow(torch.exp(uncertainty_tgt_final_step[0]).detach().cpu().squeeze(), cmap="hot")
-    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/uncertainty_map_final_step_epoch_' + str(epoch) + '.png'
+    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/uncertainty_map_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 
     plt.imshow((tgt_img_final_step[0]*0.225 + 0.45).permute(1,2,0).detach().cpu().squeeze())
-    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix/rgb_final_step_epoch_' + str(epoch) + '.png'
+    plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt2/rgb_final_step_epoch_' + str(epoch) + '.png'
     plt.axis('off')
     plt.savefig(plot_path, bbox_inches="tight", pad_inches=0, dpi=1200)
 

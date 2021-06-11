@@ -13,7 +13,9 @@ python train.py $TRAIN_SET \
 --log-output --with-gt \
 --dataset nyu \
 --name r18_rectified_nyu \
---uncertainty-training 1
+--uncertainty-training 1 \
+--pretrained-disp /cluster/home/semilk/3DVision/git/uncertainty_training/SC-SfMLearner-Release/checkpoints/r18_rectified_nyu/06-06-22:22/dispnet_checkpoint.pth.tar \
+--pretrained-pose /cluster/home/semilk/3DVision/git/uncertainty_training/SC-SfMLearner-Release/checkpoints/r18_rectified_nyu/06-06-22:22/exp_pose_checkpoint.pth.tar
 
 
 
