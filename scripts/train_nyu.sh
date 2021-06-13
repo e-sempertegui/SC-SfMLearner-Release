@@ -14,8 +14,8 @@ python train.py $TRAIN_SET \
 --dataset nyu \
 --name r18_rectified_nyu \
 --uncertainty-training 1 \
---pretrained-disp /cluster/home/semilk/3DVision/git/uncertainty_training/SC-SfMLearner-Release/checkpoints/r18_rectified_nyu/06-06-22:22/dispnet_checkpoint.pth.tar \
---pretrained-pose /cluster/home/semilk/3DVision/git/uncertainty_training/SC-SfMLearner-Release/checkpoints/r18_rectified_nyu/06-06-22:22/exp_pose_checkpoint.pth.tar
+--pretrained-disp /cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt2/uncertainty_disp_model_epoch_8.pth \
+--pretrained-pose /cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt2/uncertainty_pose_model_epoch_8.pth
 
 
 
