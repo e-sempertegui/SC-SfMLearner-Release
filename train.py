@@ -160,12 +160,14 @@ def main():
     if args.pretrained_disp:
         print("=> using pre-trained weights for DispResNet")
         weights = torch.load(args.pretrained_disp)
-        disp_net.load_state_dict(weights['state_dict'], strict=False)
+        # disp_net.load_state_dict(weights['state_dict'], strict=False)
+        disp_net.load_state_dict(weights, strict=False)
 
     if args.pretrained_pose:
         print("=> using pre-trained weights for PoseResNet")
         weights = torch.load(args.pretrained_pose)
-        pose_net.load_state_dict(weights['state_dict'], strict=False)
+        # pose_net.load_state_dict(weights['state_dict'], strict=False)
+        pose_net.load_state_dict(weights, strict=False)
 
     disp_net = torch.nn.DataParallel(disp_net)
     pose_net = torch.nn.DataParallel(pose_net)
