@@ -160,14 +160,14 @@ def main():
     if args.pretrained_disp:
         print("=> using pre-trained weights for DispResNet")
         weights = torch.load(args.pretrained_disp)
-        # disp_net.load_state_dict(weights['state_dict'], strict=False)
-        disp_net.load_state_dict(weights, strict=False)
+        disp_net.load_state_dict(weights['state_dict'], strict=False)
+        # disp_net.load_state_dict(weights, strict=False)
 
     if args.pretrained_pose:
         print("=> using pre-trained weights for PoseResNet")
         weights = torch.load(args.pretrained_pose)
-        # pose_net.load_state_dict(weights['state_dict'], strict=False)
-        pose_net.load_state_dict(weights, strict=False)
+        pose_net.load_state_dict(weights['state_dict'], strict=False)
+        # pose_net.load_state_dict(weights, strict=False)
 
     disp_net = torch.nn.DataParallel(disp_net)
     pose_net = torch.nn.DataParallel(pose_net)
@@ -232,7 +232,7 @@ def main():
             },
             is_best)
 
-        # Save final model for every epoch
+        # Save final model for every epoch (for inference only)
         save_path_disp = "/cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt3/uncertainty_disp_model" + "_epoch_" + str(epoch) + ".pth"
         torch.save(disp_net.state_dict(), save_path_disp)
         save_path_pose = "/cluster/scratch/semilk/NYU/training_saved_models/photo_only_minor_fix_pt3/uncertainty_pose_model" + "_epoch_" + str(epoch) + ".pth"
@@ -265,8 +265,6 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
 
     for i, (tgt_img, ref_imgs, intrinsics, intrinsics_inv) in enumerate(train_loader):
         log_losses = i > 0 and n_iter % args.print_freq == 0
-        # DEBUG
-        # print("Number of source images per batch = ", len(ref_imgs))
 
         # measure data loading time
         data_time.update(time.time() - end)
@@ -277,8 +275,6 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         # compute output
         tgt_depth, ref_depths, uncertainty_map_tgt, ref_uncertainty_maps = compute_depth(disp_net, tgt_img, ref_imgs)
         poses, poses_inv = compute_pose_with_inv(pose_net, tgt_img, ref_imgs)
-        # print("Size of predicted depth list = ", len(tgt_depth))
-        # print("Dimension of predicted target depth tensor for scale 0 = ", tgt_depth[0].shape)
 
         loss_1, loss_3 = compute_photo_and_geometry_loss(tgt_img, ref_imgs, intrinsics, tgt_depth, ref_depths,
                                                          poses, poses_inv, args.num_scales, args.with_ssim,
@@ -316,7 +312,6 @@ def train(args, train_loader, disp_net, pose_net, optimizer, epoch_size, logger,
         
         # save frames every certain number of steps
         if i == 0 or i % 1000 == 0:
-            # print("Number of uncertainty maps =", len(uncertainty_maps))
             # Save uncertainty map
             plt.imshow(torch.exp(uncertainty_map_tgt[0]).detach().cpu().squeeze(), cmap="hot")
             plot_path = '/cluster/scratch/semilk/NYU/results/photo_only_minor_fix_pt3/uncertainty_map_step_' + str(i) + '_epoch_' + str(epoch) + '.png'
@@ -489,15 +484,13 @@ def validate_with_gt(args, val_loader, disp_net, epoch, logger, output_writers=[
 
 
 def compute_depth(disp_net, tgt_img, ref_imgs):
-    # TODO: this should depend on args.uncertainty_training 
-    # tgt_depth = [1/disp for disp in disp_net(tgt_img)]
+    # TODO: add logic branches based on args.uncertainty_training to select between default and augmented (uncertainty) model 
     tgt_disp, uncertainty_map_tgt = disp_net(tgt_img)
     tgt_depth = [1/disp for disp in tgt_disp]
 
     ref_depths = []
     ref_uncertainty_maps = []
     for ref_img in ref_imgs:
-        # ref_depth = [1/disp for disp in disp_net(ref_img)]
         ref_disp, uncertainty_map_ref = disp_net(ref_img)
         ref_depth = [1/disp for disp in ref_disp]
         ref_depths.append(ref_depth)
